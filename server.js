@@ -3,18 +3,20 @@ const app = express();
 
 app.use(express.json());
 
-// rota teste obrigatória
+// rota teste
 app.get("/", (req, res) => {
   res.send("Backend funcionando!");
 });
 
-// rota health para Render
+// rota health check
 app.get("/healthz", (req, res) => {
-  res.status(200).send("OK");
+  res.send("ok");
 });
 
+// PORTA DO RENDER
 const PORT = process.env.PORT || 3000;
 
+// ESCUTAR EM 0.0.0.0
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Servidor rodando na porta " + PORT);
 });
