@@ -20,3 +20,9 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Servidor rodando na porta " + PORT);
 });
+
+app.post("/webhook/kiwify", express.json(), (req, res) => {
+  console.log("Webhook recebido:", req.body);
+
+  res.status(200).send("OK");
+});
