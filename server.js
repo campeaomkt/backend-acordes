@@ -3,10 +3,13 @@ require("dotenv").config();
 
 const express = require("express");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 const db = require("./database");
 
 const app = express();
+
+// ====== DEBUG DAS VARIÁVEIS ======
+console.log("ADMIN_EMAIL:", process.env.ADMIN_EMAIL);
+console.log("ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD ? "OK" : "UNDEFINED");
 
 // ====== CORS ======
 app.use(cors());
@@ -41,7 +44,6 @@ app.post("/webhook-kiwify", (req, res) => {
 
   if (!email) return res.status(400).send("Sem email");
 
-  // COMPRA APROVADA
   if (status === "paid") {
     const senhaPadrao = "123456";
 
@@ -57,7 +59,6 @@ app.post("/webhook-kiwify", (req, res) => {
     });
   }
 
-  // CANCELADO / REEMBOLSO
   if (status === "refunded" || status === "canceled") {
     db.run("UPDATE users SET active=0 WHERE email=?", [email]);
   }
@@ -68,11 +69,27 @@ app.post("/webhook-kiwify", (req, res) => {
 });
 
 // =====================
-// LOGIN
+// LOGIN (ADMIN + ALUNO)
 // =====================
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
+  console.log("Tentativa login:", email);
+
+  // LOGIN ADMIN
+  if (email === process.env.ADMIN_EMAIL) {
+    console.log("Tentativa admin detectada");
+
+    if (password === process.env.ADMIN_PASSWORD) {
+      console.log("Login admin OK");
+      return res.json({ ok: true, admin: true });
+    } else {
+      console.log("Senha admin incorreta");
+      return res.json({ erro: "Senha inválida" });
+    }
+  }
+
+  // LOGIN ALUNO
   db.get("SELECT * FROM users WHERE email=?", [email], async (err, user) => {
     if (!user) return res.json({ erro: "Usuário não encontrado" });
 
@@ -82,8 +99,29 @@ app.post("/login", (req, res) => {
 
     if (!ok) return res.json({ erro: "Senha inválida" });
 
-    res.json({ ok: true });
+    res.json({ ok: true, admin: false });
   });
+});
+
+// =====================
+// PAINEL ADMIN - CRIAR USUÁRIO
+// =====================
+app.post("/admin/add-user", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.json({ erro: "Email obrigatório" });
+
+  const senha = "123456";
+  const hash = await bcrypt.hash(senha, 10);
+
+  db.run(
+    "INSERT OR IGNORE INTO users(email,password,active) VALUES(?,?,1)",
+    [email, hash],
+    err => {
+      if (err) return res.json({ erro: "Erro ao salvar" });
+      res.json({ ok: true, senha });
+    }
+  );
 });
 
 // =====================

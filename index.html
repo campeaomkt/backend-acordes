@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | Dicionário de Acordes</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #111, #e53935);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  background: #fff;
+  width: 100%;
+  max-width: 360px;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  text-align: center;
+}
+
+.login-card img {
+  width: 90px;
+  margin-bottom: 15px;
+}
+
+.login-card h2 {
+  margin-bottom: 5px;
+  color: #222;
+}
+
+.login-card p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.login-card button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #e53935;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-card button:hover {
+  background: #c62828;
+}
+
+.login-card .footer {
+  margin-top: 15px;
+  font-size: 13px;
+  color: #777;
+}
+</style>
+</head>
+<body>
+
+<div class="login-card">
+
+  <!-- Se quiser, troque pelo seu logo -->
+  <img src="logo.png" alt="Logo">
+
+  <h2>Área de Acesso</h2>
+  <p>Dicionário de Acordes para Teclado</p>
+
+  <input id="email" type="email" placeholder="Seu email">
+  <input id="password" type="password" placeholder="Sua senha">
+
+  <button onclick="alert('Login ainda não conectado')">Entrar</button>
+
+  <div class="footer">
+    © Eliab Teclas
+  </div>
+
+</div>
+
+</body>
+</html>
