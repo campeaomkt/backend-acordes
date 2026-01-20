@@ -30,30 +30,27 @@ app.get("/healthz", (req, res) => {
 app.post("/webhook-kiwify", (req, res) => {
 
   console.log("=== WEBHOOK CHEGOU ===");
-  console.log("Headers:", req.headers);
   console.log("Body:", req.body);
 
-  const recebido = req.headers["authorization"];
-  const token = process.env.KIWIFY_TOKEN;
+  // EMAIL REAL DA KIWIFY
+  const email = req.body.Customer?.email?.trim().toLowerCase();
 
-  if (!recebido) {
-    console.log("Webhook sem authorization");
-    return res.status(401).json({ erro: "Sem token" });
-  }
-
-  const tokenLimpo = recebido.replace("Bearer ", "").trim();
-
-  if (tokenLimpo !== token) {
-    console.log("Token inválido recebido:", tokenLimpo);
-    return res.status(401).json({ erro: "Token inválido" });
-  }
-
-  const email = req.body.customer?.email?.trim().toLowerCase();
+  // STATUS REAL
   const status = req.body.order_status;
 
-  if (!email) return res.status(400).send("Sem email");
+  if (!email) {
+    console.log("Webhook sem email");
+    return res.status(400).json({ erro: "Sem email" });
+  }
 
-  if (status === "paid") {
+  console.log("Email recebido:", email);
+  console.log("Status recebido:", status);
+
+  // =====================
+  // COMPRA APROVADA
+  // =====================
+  if (status === "paid" || status === "order_approved") {
+
     const senhaPadrao = "123456";
 
     bcrypt.hash(senhaPadrao, 10, (err, hash) => {
@@ -66,8 +63,12 @@ app.post("/webhook-kiwify", (req, res) => {
 
       db.run("UPDATE users SET active=1 WHERE email=?", [email]);
     });
+
   }
 
+  // =====================
+  // CANCELAMENTO / REEMBOLSO
+  // =====================
   if (status === "refunded" || status === "canceled") {
     db.run("UPDATE users SET active=0 WHERE email=?", [email]);
   }
@@ -78,7 +79,7 @@ app.post("/webhook-kiwify", (req, res) => {
 });
 
 // =====================
-// CHECK ACCESS
+// CHECK ACCESS (APP)
 // =====================
 app.post("/check-access", (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
@@ -87,6 +88,7 @@ app.post("/check-access", (req, res) => {
 
   db.get("SELECT active FROM users WHERE email=?", [email], (err, user) => {
     if (!user) return res.json({ active: false });
+
     res.json({ active: user.active === 1 });
   });
 });
