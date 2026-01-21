@@ -31,12 +31,14 @@ app.post("/webhook-kiwify", async (req, res) => {
 
   try {
 
+    // =====================
     // COMPRA APROVADA
+    // =====================
     if (status === "paid" || status === "order_approved") {
 
       const token = crypto.randomUUID();
 
-      await User.findOneAndUpdate(
+      const user = await User.findOneAndUpdate(
         { email },
         {
           email,
@@ -46,10 +48,12 @@ app.post("/webhook-kiwify", async (req, res) => {
         { upsert:true, new:true }
       );
 
-      console.log("Usuário liberado:", email, token);
+      console.log("Usuário salvo no Mongo:", user.email, user.active);
     }
 
-    // REEMBOLSO / CANCELAMENTO
+    // =====================
+    // CANCELAMENTO / REEMBOLSO
+    // =====================
     if (status === "refunded" || status === "canceled") {
 
       await User.findOneAndUpdate(
@@ -69,31 +73,28 @@ app.post("/webhook-kiwify", async (req, res) => {
 });
 
 // =====================
-// GERAR TOKEN PELO EMAIL
-// (opcional para admin / suporte)
-// =====================
-app.post("/get-token", async (req,res)=>{
-  const { email } = req.body;
-
-  const user = await User.findOne({ email, active:true });
-
-  if(!user) return res.json({ ok:false });
-
-  res.json({ ok:true, token:user.token });
-});
-
-// =====================
-// CHECK ACCESS POR TOKEN
+// CHECK ACCESS (EMAIL OU TOKEN)
 // =====================
 app.post("/check-access", async (req,res)=>{
-  const { token } = req.body;
 
-  if(!token) return res.json({ active:false });
+  const { email, token } = req.body;
 
-  const user = await User.findOne({ token, active:true });
+  let user = null;
 
-  if(!user) return res.json({ active:false });
+  if(token){
+    user = await User.findOne({ token, active:true });
+  }
 
+  if(!user && email){
+    user = await User.findOne({ email, active:true });
+  }
+
+  if(!user){
+    console.log("CHECK ACCESS NEGADO:", email || token);
+    return res.json({ active:false });
+  }
+
+  console.log("CHECK ACCESS OK:", user.email);
   res.json({ active:true });
 });
 
