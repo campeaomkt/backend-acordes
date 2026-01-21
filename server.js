@@ -25,13 +25,16 @@ app.post("/webhook-kiwify", async (req, res) => {
   const email = req.body.Customer?.email?.trim().toLowerCase();
   const status = req.body.order_status;
 
+  console.log("Webhook:", email, status);
+
   if (!email) return res.json({ ok:false });
 
   try {
 
+    // COMPRA APROVADA
     if (status === "paid" || status === "order_approved") {
 
-      const token = crypto.randomBytes(32).toString("hex");
+      const token = crypto.randomUUID();
 
       await User.findOneAndUpdate(
         { email },
@@ -40,12 +43,13 @@ app.post("/webhook-kiwify", async (req, res) => {
           active: true,
           token
         },
-        { upsert:true }
+        { upsert:true, new:true }
       );
 
-      console.log("Usuário liberado:", email);
+      console.log("Usuário liberado:", email, token);
     }
 
+    // REEMBOLSO / CANCELAMENTO
     if (status === "refunded" || status === "canceled") {
 
       await User.findOneAndUpdate(
@@ -66,6 +70,7 @@ app.post("/webhook-kiwify", async (req, res) => {
 
 // =====================
 // GERAR TOKEN PELO EMAIL
+// (opcional para admin / suporte)
 // =====================
 app.post("/get-token", async (req,res)=>{
   const { email } = req.body;
@@ -82,6 +87,8 @@ app.post("/get-token", async (req,res)=>{
 // =====================
 app.post("/check-access", async (req,res)=>{
   const { token } = req.body;
+
+  if(!token) return res.json({ active:false });
 
   const user = await User.findOne({ token, active:true });
 
