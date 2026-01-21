@@ -7,7 +7,8 @@ mongoose.connect(process.env.MONGO_URI)
 const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
-  active: Boolean
+  active: Boolean,
+  token: String
 });
 
 module.exports = mongoose.model("User", UserSchema);
