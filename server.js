@@ -2,7 +2,6 @@ const cors = require("cors");
 require("dotenv").config();
 
 const express = require("express");
-const crypto = require("crypto");
 const User = require("./database");
 
 const app = express();
@@ -31,29 +30,22 @@ app.post("/webhook-kiwify", async (req, res) => {
 
   try {
 
-    // =====================
     // COMPRA APROVADA
-    // =====================
     if (status === "paid" || status === "order_approved") {
-
-      const token = crypto.randomUUID();
 
       const user = await User.findOneAndUpdate(
         { email },
         {
           email,
-          active: true,
-          token
+          active: true
         },
         { upsert:true, new:true }
       );
 
-      console.log("Usuário salvo no Mongo:", user.email, user.active);
+      console.log("Usuário liberado:", user.email);
     }
 
-    // =====================
-    // CANCELAMENTO / REEMBOLSO
-    // =====================
+    // REEMBOLSO / CANCELAMENTO
     if (status === "refunded" || status === "canceled") {
 
       await User.findOneAndUpdate(
@@ -73,28 +65,25 @@ app.post("/webhook-kiwify", async (req, res) => {
 });
 
 // =====================
-// CHECK ACCESS (EMAIL OU TOKEN)
+// CHECK ACCESS POR EMAIL
 // =====================
 app.post("/check-access", async (req,res)=>{
 
-  const { email, token } = req.body;
+  const { email } = req.body;
 
-  let user = null;
-
-  if(token){
-    user = await User.findOne({ token, active:true });
-  }
-
-  if(!user && email){
-    user = await User.findOne({ email, active:true });
-  }
-
-  if(!user){
-    console.log("CHECK ACCESS NEGADO:", email || token);
+  if(!email){
+    console.log("CHECK ACCESS sem email");
     return res.json({ active:false });
   }
 
-  console.log("CHECK ACCESS OK:", user.email);
+  const user = await User.findOne({ email, active:true });
+
+  if(!user){
+    console.log("CHECK ACCESS NEGADO:", email);
+    return res.json({ active:false });
+  }
+
+  console.log("CHECK ACCESS OK:", email);
   res.json({ active:true });
 });
 
