@@ -7,10 +7,10 @@ const User = require("./database");
 
 const app = express();
 
-// ====== CORS ======
+// ===== CORS =====
 app.use(cors());
 
-// ====== JSON ======
+// ===== JSON =====
 app.use(express.json());
 
 // =====================
@@ -43,30 +43,54 @@ app.post("/webhook-kiwify", async (req, res) => {
   console.log("Email recebido:", email);
   console.log("Status recebido:", status);
 
-  // ===== COMPRA APROVADA =====
-  if (status === "paid" || status === "order_approved") {
+  try {
 
-    const senhaPadrao = "123456";
-    const hash = await bcrypt.hash(senhaPadrao, 10);
+    // =====================
+    // COMPRA APROVADA
+    // =====================
+    if (
+      status === "paid" ||
+      status === "order_approved"
+    ) {
 
-    await User.findOneAndUpdate(
-      { email },
-      { email, password: hash, active: true },
-      { upsert: true }
-    );
+      const senhaPadrao = "123456";
+      const hash = await bcrypt.hash(senhaPadrao, 10);
+
+      await User.findOneAndUpdate(
+        { email },
+        {
+          email,
+          password: hash,
+          active: true
+        },
+        { upsert: true, new: true }
+      );
+
+      console.log("Usuário liberado:", email);
+    }
+
+    // =====================
+    // REEMBOLSO / CANCELAMENTO
+    // =====================
+    if (
+      status === "refunded" ||
+      status === "canceled"
+    ) {
+      await User.findOneAndUpdate(
+        { email },
+        { active: false }
+      );
+
+      console.log("Usuário bloqueado:", email);
+    }
+
+    console.log("Webhook processado:", email, status);
+    res.json({ ok: true });
+
+  } catch (err) {
+    console.log("Erro webhook:", err);
+    res.status(500).json({ erro: "Erro interno" });
   }
-
-  // ===== REEMBOLSO =====
-  if (status === "refunded") {
-    await User.findOneAndUpdate(
-      { email },
-      { active: false }
-    );
-  }
-
-  console.log("Webhook processado:", email, status);
-
-  res.json({ ok: true });
 });
 
 // =====================
@@ -75,17 +99,23 @@ app.post("/webhook-kiwify", async (req, res) => {
 app.post("/check-access", async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
 
-  console.log("CHECK ACCESS:", email);
+  console.log("CHECK ACCESS PARA:", email);
 
   if (!email) return res.json({ active: false });
 
-  const user = await User.findOne({ email });
+  try {
+    const user = await User.findOne({ email });
 
-  console.log("USUÁRIO NO BANCO:", user);
+    console.log("RESULTADO DO BANCO:", user);
 
-  if (!user) return res.json({ active: false });
+    if (!user) return res.json({ active: false });
 
-  res.json({ active: user.active === true });
+    res.json({ active: user.active === true });
+
+  } catch (err) {
+    console.log("Erro check-access:", err);
+    res.json({ active: false });
+  }
 });
 
 // =====================

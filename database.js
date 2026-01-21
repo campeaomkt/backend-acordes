@@ -1,5 +1,3 @@
-console.log("MONGO_URI:", process.env.MONGO_URI);
-
 const mongoose = require("mongoose");
 
 mongoose.connect(process.env.MONGO_URI)
