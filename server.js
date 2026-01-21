@@ -32,10 +32,7 @@ app.post("/webhook-kiwify", (req, res) => {
   console.log("=== WEBHOOK CHEGOU ===");
   console.log("Body:", req.body);
 
-  // EMAIL REAL DA KIWIFY
   const email = req.body.Customer?.email?.trim().toLowerCase();
-
-  // STATUS REAL
   const status = req.body.order_status;
 
   if (!email) {
@@ -67,11 +64,16 @@ app.post("/webhook-kiwify", (req, res) => {
   }
 
   // =====================
-  // CANCELAMENTO / REEMBOLSO
+  // REEMBOLSO → BLOQUEIA
   // =====================
-  if (status === "refunded" || status === "canceled") {
+  if (status === "refunded") {
     db.run("UPDATE users SET active=0 WHERE email=?", [email]);
   }
+
+  // =====================
+  // OUTROS STATUS
+  // =====================
+  // canceled, refused, pending, waiting → IGNORA
 
   console.log("Webhook processado:", email, status);
 
