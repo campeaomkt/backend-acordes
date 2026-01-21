@@ -86,14 +86,19 @@ app.post("/webhook-kiwify", (req, res) => {
 app.post("/check-access", (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
 
+  console.log("CHECK ACCESS PARA:", email);
+
   if (!email) return res.json({ active: false });
 
-  db.get("SELECT active FROM users WHERE email=?", [email], (err, user) => {
+  db.get("SELECT * FROM users WHERE email=?", [email], (err, user) => {
+    console.log("RESULTADO DO BANCO:", user);
+
     if (!user) return res.json({ active: false });
 
     res.json({ active: user.active === 1 });
   });
 });
+
 
 // =====================
 // PORTA DO RENDER
