@@ -1,16 +1,13 @@
-const sqlite3 = require("sqlite3").verbose();
+const mongoose = require("mongoose");
 
-const db = new sqlite3.Database("./users.db");
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB conectado com sucesso"))
+  .catch(err => console.log("Erro MongoDB:", err));
 
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE,
-      password TEXT,
-      active INTEGER
-    )
-  `);
+const UserSchema = new mongoose.Schema({
+  email: { type: String, unique: true },
+  password: String,
+  active: Boolean
 });
 
-module.exports = db;
+module.exports = mongoose.model("User", UserSchema);

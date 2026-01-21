@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const express = require("express");
 const bcrypt = require("bcrypt");
-const db = require("./database");
+const User = require("./database");
 
 const app = express();
 
@@ -27,7 +27,7 @@ app.get("/healthz", (req, res) => {
 // =====================
 // WEBHOOK KIWIFY
 // =====================
-app.post("/webhook-kiwify", (req, res) => {
+app.post("/webhook-kiwify", async (req, res) => {
 
   console.log("=== WEBHOOK CHEGOU ===");
   console.log("Body:", req.body);
@@ -43,37 +43,26 @@ app.post("/webhook-kiwify", (req, res) => {
   console.log("Email recebido:", email);
   console.log("Status recebido:", status);
 
-  // =====================
-  // COMPRA APROVADA
-  // =====================
+  // ===== COMPRA APROVADA =====
   if (status === "paid" || status === "order_approved") {
 
     const senhaPadrao = "123456";
+    const hash = await bcrypt.hash(senhaPadrao, 10);
 
-    bcrypt.hash(senhaPadrao, 10, (err, hash) => {
-      if (err) return console.log("Erro hash:", err);
-
-      db.run(
-        "INSERT OR IGNORE INTO users(email,password,active) VALUES(?,?,1)",
-        [email, hash]
-      );
-
-      db.run("UPDATE users SET active=1 WHERE email=?", [email]);
-    });
-
+    await User.findOneAndUpdate(
+      { email },
+      { email, password: hash, active: true },
+      { upsert: true }
+    );
   }
 
-  // =====================
-  // REEMBOLSO → BLOQUEIA
-  // =====================
+  // ===== REEMBOLSO =====
   if (status === "refunded") {
-    db.run("UPDATE users SET active=0 WHERE email=?", [email]);
+    await User.findOneAndUpdate(
+      { email },
+      { active: false }
+    );
   }
-
-  // =====================
-  // OUTROS STATUS
-  // =====================
-  // canceled, refused, pending, waiting → IGNORA
 
   console.log("Webhook processado:", email, status);
 
@@ -83,22 +72,21 @@ app.post("/webhook-kiwify", (req, res) => {
 // =====================
 // CHECK ACCESS (APP)
 // =====================
-app.post("/check-access", (req, res) => {
+app.post("/check-access", async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
 
-  console.log("CHECK ACCESS PARA:", email);
+  console.log("CHECK ACCESS:", email);
 
   if (!email) return res.json({ active: false });
 
-  db.get("SELECT * FROM users WHERE email=?", [email], (err, user) => {
-    console.log("RESULTADO DO BANCO:", user);
+  const user = await User.findOne({ email });
 
-    if (!user) return res.json({ active: false });
+  console.log("USUÁRIO NO BANCO:", user);
 
-    res.json({ active: user.active === 1 });
-  });
+  if (!user) return res.json({ active: false });
+
+  res.json({ active: user.active === true });
 });
-
 
 // =====================
 // PORTA DO RENDER
